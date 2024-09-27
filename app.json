@@ -12,16 +12,39 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.haramad"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ffffff",
+        "package": "com.haramad",
+        "config": {
+          "googleMaps": {
+            "apiKey": "AIzaSyDdUQ1EIQJB46n2RSusQro1qP3Pd4mGZcA"
+          },
+          "permissions": [
+            "ACCESS_COARSE_LOCATION",
+            "ACCESS_FINE_LOCATION",
+            "FOREGROUND_SERVICE"
+          ]
+        }
       }
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "acb19079-4a0e-4157-82c4-9a8653c09f69"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/acb19079-4a0e-4157-82c4-9a8653c09f69"
     }
   }
 }
