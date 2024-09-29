@@ -18,6 +18,7 @@ const Stack = createStackNavigator();
 
 const StackNavigation = () => {
   const { isLoggedIn } = useContext(AuthContext);
+  console.log("user login status",isLoggedIn)
   return (
     <Stack.Navigator>
       {!isLoggedIn ? (

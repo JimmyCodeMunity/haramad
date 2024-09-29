@@ -11,37 +11,26 @@ import {
   TouchableOpacity,
 } from "react-native";
 import React, { useEffect, useState } from "react";
-import MapView, { PROVIDER_GOOGLE, PROVIDER_DEFAULT } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, PROVIDER_DEFAULT, Marker } from "react-native-maps";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import * as Location from "expo-location"; // Import Location API from Expo
-import axios from "axios"; // Import Axios for API requests
-//   import { GGOGLE_MAPS_API_KEY } from "../constants";
-const GOOGLE_MAPS_API_KEY = "AIzaSyDdUQ1EIQJB46n2RSusQro1qP3Pd4mGZcA";
+import * as Location from "expo-location";
+import axios from "axios";
 import { io } from "socket.io-client";
-import { PaperProvider, Modal, Portal, Button } from "react-native-paper";
+import { PaperProvider } from "react-native-paper";
 import { BASE_URL } from "../config";
-// const socket = io.connect("https://sockettestserver.vercel.app/");
-const socket = io.connect("https://charmed-dog-marble.glitch.me/");
-// const socket = io.connect("http://192.168.1.130:5000");
 
+const GOOGLE_MAPS_API_KEY = "AIzaSyDdUQ1EIQJB46n2RSusQro1qP3Pd4mGZcA";
+// const socket = io.connect("https://charmed-dog-marble.glitch.me/");
+const socket = io.connect("http://192.168.0.100:8000");
 const wh = Dimensions.get("window").height;
 
 const HomeScreen = ({ navigation }) => {
-  const [isOnline, setIsOnline] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [locationName, setLocationName] = useState("");
   const [loadingLocation, setLoadingLocation] = useState(true);
+  const [drivers, setDrivers] = useState([]);
 
-  // handle modal
-
-  // request
-  const [message, setMessage] = useState("");
-  const [messageReceived, setMessageReceived] = useState("");
-
-  const [userid, setUserid] = useState("");
-
-  // Add your Google Maps API key here
-
+  // Request user location permission
   const checkPermission = async () => {
     const hasPermission = await Location.requestForegroundPermissionsAsync();
     if (hasPermission.status === "granted") {
@@ -72,7 +61,6 @@ const HomeScreen = ({ navigation }) => {
       const response = await axios.get(
         `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`
       );
-    //   console.log("response", response);
 
       if (response.data.results.length > 0) {
         const address = response.data.results[0].formatted_address;
@@ -84,74 +72,78 @@ const HomeScreen = ({ navigation }) => {
       console.error("Error fetching location name:", error);
       setLocationName("Error fetching location");
     } finally {
-      setLoadingLocation(false); // Stop the loader
+      setLoadingLocation(false);
     }
   };
+
+  // Get drivers' locations
+  const getDrivers = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/getonlinedrivers`);
+      setDrivers(response.data);
+      
+    } catch (error) {
+      console.log("Error getting drivers");
+    }
+  };
+
+  if(drivers){
+    // console.log("drivers found",drivers)
+  }
 
   useEffect(() => {
     checkPermission();
     getLocation();
+    getDrivers();
   }, []);
 
-  // Toggle online/offline
 
-//   console.log("current", currentLocation);
+  // get new location changes
+  useEffect(() => {
+    const initializeSocket = () => {
+      socket.on("driver-location-changed", (driver) => {
+        const { _id, location } = driver;
+        if (location && location.coordinates) {
+          // console.warn("a driver just moved")
+          setDrivers((prevDrivers) => {
+            const existingDriverIndex = prevDrivers.findIndex(d => d.id === _id);
+            if (existingDriverIndex !== -1) {
+              // Update existing driver location
+              const updatedDrivers = [...prevDrivers];
+              updatedDrivers[existingDriverIndex].location.coordinates = location.coordinates;
+              return updatedDrivers;
+            } else {
+              // Add new driver if not found
+              return [...prevDrivers, { id: _id, location }];
+            }
+          });
+        }
+      });
+    };
 
+    const initialize = async () => {
+      const permissionGranted = await checkPermission();
+      if (permissionGranted) {
+        await getLocation();
+        await getDrivers();
+        initializeSocket();
+      }
+    };
 
-const getDrivers = async()=>{
-  try {
-    const response = await axios.get(`${BASE_URL}/getonlinedrivers`);
-    console.log("drivers", response.data);
-    
-  } catch (error) {
-    console.log("error getting drivers")
-    
-  }
-}
+    initialize();
 
-useEffect(()=>{
-  getDrivers()
-},[])
+    // Cleanup socket connection on unmount
+    return () => {
+      socket.off("driver-location-changed");
+    };
+  }, []);
 
   return (
     <PaperProvider>
-      {/* modal */}
-      {/* <Portal className="bg-white">
-          <Modal
-            visible={visible}
-            className="justify-center px-5"
-            onDismiss={hideModal}
-            contentContainerStyle={containerStyle}
-          >
-            <View className="w-full space-y-3 justify-center items-center">
-              <Image
-                source={require("../assets/taxi.png")}
-                className="h-32 w-32 object-cover"
-              />
-              <Text className="text-slate-500">
-                You have a new ride request from {userid}
-              </Text>
-  
-              <TouchableOpacity className="bg-black h-10 w-60 justify-center items-center rounded-xl">
-                <Text className="text-white text-lg">Accept</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => hideModal()}
-                className="bg-red-500 h-10 w-60 justify-center items-center rounded-xl"
-              >
-                <Text className="text-white text-lg">Decline</Text>
-              </TouchableOpacity>
-            </View>
-          </Modal>
-        </Portal> */}
-
-      {/* modal end */}
       <View className="bg-white flex-1">
         <MapView
-          mapType={Platform.OS == "android" ? "none" : "mutedStandard"}
-          provider={
-            Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT
-          }
+          mapType={Platform.OS === "android" ? "mutedStandard" : "mutedStandard"}
+          provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
           className="w-full"
           style={{ height: wh - 300 }}
           showsUserLocation={true}
@@ -164,9 +156,30 @@ useEffect(()=>{
             longitudeDelta: 0.0421,
           }}
           zoomEnabled={true}
-        />
+        >
+          {
+          drivers.map((driver)=>{
+            return(
+              <Marker
+            key={driver._id} // Use a unique key for each driver
+            coordinate={{
+              latitude: driver.location.coordinates[1],
+              longitude: driver.location.coordinates[0],
+            }}
+            title={driver.name} // Use driver's name as the title
+            description={`Driver ID: ${driver._id}`} // Description can be customized
+          >
+            <Image
+              source={require("../assets/car.png")} // Use a custom image for driver markers
+              style={{ width: 30, height: 30 }} // Customize marker size
+            />
+          </Marker>
+            )
+          })
+        }
 
-        {/* Loader for fetching current location */}
+        </MapView>
+
         {loadingLocation && (
           <View style={styles.loaderContainer}>
             <ActivityIndicator size="large" color="#0000ff" />
@@ -174,17 +187,29 @@ useEffect(()=>{
           </View>
         )}
 
-        {/* Location Name */}
-        {/* {!loadingLocation && (
-          <View className="absolute top-10 w-full justify-center items-center">
-            <Text className="text-lg font-bold">
-              {locationName || "Fetching location..."}
-            </Text>
-          </View>
-        )} */}
+        {/* Render driver markers */}
+        {
+          drivers.map((driver)=>{
+            return(
+              <Marker
+            key={driver.id} // Use a unique key for each driver
+            coordinate={{
+              latitude: driver.location.coordinates[1],
+              longitude: driver.location.coordinates[0],
+            }}
+            title={driver.name} // Use driver's name as the title
+            description={`Driver ID: ${driver.id}`} // Description can be customized
+          >
+            <Image
+              source={require("../assets/car.png")} // Use a custom image for driver markers
+              style={{ width: 30, height: 30 }} // Customize marker size
+            />
+          </Marker>
+            )
+          })
+        }
 
         <TouchableOpacity
-          // onPress={goOnline}
           onPress={() => navigation.openDrawer()}
           className="top-16 left-5 absolute rounded-full bg-white justify-center items-center h-12 w-12"
         >
@@ -196,57 +221,52 @@ useEffect(()=>{
 
         {/* Online/Offline Status */}
         <View className="bg-black rounded-t-3xl">
-            <View className=" p-1 text-center justify-center items-center w-full">
-                <Text className="text-white font-semibold text-lg">Ride Today!!</Text>
-            </View>
-        <View className="h-full rounded-t-3xl bottom-0 w-full px-5 bg-white py-4 shadow shadow-xl items-center">
-          {/* types */}
-          <View className="flex-row items-center justify-between w-full space-x-4">
-            <View className="w-[45%] bg-slate-200 rounded-xl justify-center items-center">
-              <Image
-                className="w-10 h-10 object-cover"
-                source={require("../assets/car.png")}
-              />
-              <Text className="text-xl">Ride</Text>
-            </View>
-            <View className="w-[45%] bg-slate-200 rounded-xl justify-center items-center">
-              <Image
-                className="h-10 w-10 object-cover"
-                source={require("../assets/motorbike.png")}
-              />
-              <Text className="text-xl">Boda</Text>
-            </View>
+          <View className="p-1 text-center justify-center items-center w-full">
+            <Text className="text-white font-semibold text-lg">Ride Today!!</Text>
           </View>
-          {/* end types */}
-
-          {/* start */}
-
-          <View className="w-full py-8 space-y-8">
-            <Pressable
-            onPress={()=>navigation.navigate("destinationsearch",{locationname:locationName,initialLocation:currentLocation})}
-            className="w-full flex-row items-center space-x-5">
-              <View>
+          <View className="h-full rounded-t-3xl bottom-0 w-full px-5 bg-white py-4 shadow shadow-xl items-center">
+            <View className="flex-row items-center justify-between w-full space-x-4">
+              <View className="w-[45%] bg-slate-200 rounded-xl justify-center items-center">
                 <Image
-                  className="h-10 w-10"
-                  source={require("../assets/crosshair.png")}
+                  className="w-10 h-10 object-cover"
+                  source={require("../assets/car.png")}
                 />
+                <Text className="text-xl">Ride</Text>
               </View>
-              <View>
-                <Text className="text-slate-500">{locationName}</Text>
+              <View className="w-[45%] bg-slate-200 rounded-xl justify-center items-center">
+                <Image
+                  className="h-10 w-10 object-cover"
+                  source={require("../assets/motorbike.png")}
+                />
+                <Text className="text-xl">Boda</Text>
               </View>
-            </Pressable>
-            <Pressable
-            onPress={()=>navigation.navigate("destinationsearch",{initialLocation:currentLocation})}
-            className="w-full flex-row items-center space-x-5">
-              <View className="h-12 w-full flex-row space-x-4 rounded-md bg-slate-200 items-center px-4">
-                <Icon name="magnify" size={30} color="gray" />
-                <Text className="text-slate-400 text-xl">To ?</Text>
-              </View>
-            </Pressable>
+            </View>
+            <View className="w-full py-8 space-y-8">
+              <Pressable
+                onPress={() => navigation.navigate("destinationsearch", { locationname: locationName, initialLocation: currentLocation })}
+                className="w-full flex-row items-center space-x-5"
+              >
+                <View>
+                  <Image
+                    className="h-10 w-10"
+                    source={require("../assets/crosshair.png")}
+                  />
+                </View>
+                <View>
+                  <Text className="text-slate-500">{locationName}</Text>
+                </View>
+              </Pressable>
+              <Pressable
+                onPress={() => navigation.navigate("destinationsearch", { initialLocation: currentLocation })}
+                className="w-full flex-row items-center space-x-5"
+              >
+                <View className="h-12 w-full flex-row space-x-4 rounded-md bg-slate-200 items-center px-4">
+                  <Icon name="magnify" size={30} color="gray" />
+                  <Text className="text-slate-400 text-xl">To ?</Text>
+                </View>
+              </Pressable>
+            </View>
           </View>
-
-          {/* end */}
-        </View>
         </View>
       </View>
     </PaperProvider>
