@@ -30,6 +30,7 @@ const DestinationSearch = ({navigation,route}) => {
     description: "Workplace",
     geometry: { location: { lat: 37.7771, lng: -122.4196 } },
   };
+  
 
   const checkNavigation = () => {
     console.warn("navigation called");

@@ -12,6 +12,9 @@ import DestinationScreen from "../screens/DestinationScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import SearchResultScreen from "../screens/SearchResultScreen";
 import { AuthContext } from "../context/AuthContext";
+import RideDecideScreen from "../screens/RideDecideScreen";
+import AcceptedScreen from "../screens/AcceptedScreen";
+import StartTrip from "../screens/StartTrip";
 // import SearchingRide from "../screens/SearchingRide";
 
 const Stack = createStackNavigator();
@@ -62,6 +65,17 @@ const StackNavigation = () => {
             component={SearchResultScreen}
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="ridedecision"
+            component={RideDecideScreen}
+            options={{ headerShown: false }}
+          />
+          
+          {/* <Stack.Screen
+            name="accepted"
+            component={AcceptedScreen}
+            options={{ headerShown: false }}
+          /> */}
           {/* <Stack.Screen
         name="search"
         component={SearchResults}

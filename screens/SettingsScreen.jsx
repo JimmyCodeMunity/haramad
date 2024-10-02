@@ -4,38 +4,39 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AuthContext } from "../context/AuthContext";
 
-const SettingsScreen = () => {
+const SettingsScreen = ({navigation}) => {
   const [isOnline, setIsOnline] = useState(false);
 
   const { userToken, isLoggedIn, logout } = useContext(AuthContext);
-  const [userdata, setUserdata] = useState(null);
+  const {userdata} = useContext(AuthContext)
   const [loading, setLoading] = useState(false);
+
 
   // handle logout
   const handleLogout = async () => {
     await logout();
-    navigation.replace("Login");
+    // navigation.replace("Login");
   };
-  useEffect(() => {
-    const loadUserdata = async () => {
-      try {
-        // Fetch userdata from AsyncStorage
-        const storedUserdata = await AsyncStorage.getItem("userdata");
-        // console.log("stored", storedUserdata);
-        if (storedUserdata) {
-          setUserdata(JSON.parse(storedUserdata));
-          // setDriverid(JSON.parse(storedUserdata.userdata._id));
-          // console.log("driverid",storedUserdata.userdata._id)
-        }
-      } catch (error) {
-        console.error("Failed to load user data from AsyncStorage", error);
-      } finally {
-        setLoading(false); // Stop loading once data is fetched
-      }
-    };
+  // useEffect(() => {
+  //   const loadUserdata = async () => {
+  //     try {
+  //       // Fetch userdata from AsyncStorage
+  //       const storedUserdata = await AsyncStorage.getItem("userdata");
+  //       // console.log("stored", storedUserdata);
+  //       if (storedUserdata) {
+  //         setUserdata(JSON.parse(storedUserdata));
+  //         // setDriverid(JSON.parse(storedUserdata.userdata._id));
+  //         // console.log("driverid",storedUserdata.userdata._id)
+  //       }
+  //     } catch (error) {
+  //       console.error("Failed to load user data from AsyncStorage", error);
+  //     } finally {
+  //       setLoading(false); // Stop loading once data is fetched
+  //     }
+  //   };
 
-    loadUserdata();
-  }, []);
+  //   loadUserdata();
+  // }, []);
   return (
     <SafeAreaView className="flex-1">
       <View className="justify-center items-center space-y-1">
@@ -43,11 +44,10 @@ const SettingsScreen = () => {
         <Icon name="account" color="gray" size={30} />
         </View>
 
-        {
-          userdata &&
         
-          <Text className="text-2xl text-black font-semibold">{userdata.userdata.name}</Text>
-        }
+        
+          <Text className="text-2xl text-black font-semibold">{userdata?.userdata?.name}</Text>
+        
         <View className="flex-row items-center space-x-1">
           <Icon name="star" color="green" size={25} />
           <Text className="text-lg font-semibold">5.00</Text>
@@ -69,6 +69,17 @@ const SettingsScreen = () => {
           <View className="flex-row space-x-2">
             <Icon name="account" color="gray" size={25} />
             <Text className="text-slate-700 text-lg">About</Text>
+          </View>
+          <View>
+            <Icon name="chevron-right" color="grey" size={25} />
+          </View>
+        </Pressable>
+        <Pressable
+        onPress={handleLogout}
+        className="flex-row items-center justify-between py-3">
+          <View className="flex-row space-x-2">
+            <Icon name="account" color="gray" size={25} />
+            <Text className="text-red-400 text-lg">Logout</Text>
           </View>
           <View>
             <Icon name="chevron-right" color="grey" size={25} />

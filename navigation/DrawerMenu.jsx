@@ -57,7 +57,11 @@ const DrawerMenu = (props) => {
                 {userdata.userdata.name}
               </Text>
             )}
-            <Text className="text-red-400 font-semibold">My Account</Text>
+            {userdata && (
+              <Text className="text-red-400 font-semibold">
+                {userdata.userdata._id}
+              </Text>
+            )}
           </View>
         </View>
 

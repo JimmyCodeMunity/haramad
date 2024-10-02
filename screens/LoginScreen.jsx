@@ -1,16 +1,18 @@
 import { StyleSheet, Text, View,TextInput,TouchableOpacity, SafeAreaView, Pressable } from 'react-native'
 import React, { useContext, useState } from 'react'
 import { AuthContext } from '../context/AuthContext';
+import { ActivityIndicator } from 'react-native';
+import { Alert } from 'react-native';
 
 const LoginScreen = ({navigation}) => {
   const {login,loading} = useContext(AuthContext)
   const [email,setEmail] = useState("jimmy@gmail.com");
   const [password,setPassword] = useState("123456");
-  const [dataload,setDataload] = useState(loading)
+  const [dataload,setDataload] = useState(false)
 
 
   const handleLogin = async () => {
-    setDataload(!loading);
+    setDataload(true);
     try {
       if (!email || !password) {
         Alert.alert("All fields are required");
@@ -19,10 +21,10 @@ const LoginScreen = ({navigation}) => {
       await login(email, password);
       Alert.alert("Login successful");
       navigation.navigate('Home');
-      setDataload(!loading);
+      setDataload(false);
     } catch (error) {
       Alert.alert("Login failed", error.message);
-      setDataload(!loading);
+      setDataload(false);
     }
   };
   return (
@@ -36,7 +38,7 @@ const LoginScreen = ({navigation}) => {
           className="border border-t-0 h-12 border-l-0 border-r-0 border-red-300"
           placeholder="enter email"
           value={email}
-          onChangeText={(email)=>setEmail(text)}
+          onChangeText={(text)=>setEmail(text)}
           placeholderTextColor="#868686"
         />
         
@@ -48,12 +50,25 @@ const LoginScreen = ({navigation}) => {
           onChangeText={(email)=>setPassword(text)}
         />
 
-        <TouchableOpacity
+        {
+          !dataload ? (
+            <TouchableOpacity
         onPress={handleLogin}
         // onPress={()=>navigation.navigate('home')}
         className="bg-red-500 h-12 rounded-2xl justify-center items-center">
           <Text className="text-white text-xl font-semibold">Submit</Text>
         </TouchableOpacity>
+          ):(
+            <TouchableOpacity
+        onPress={handleLogin}
+        // onPress={()=>navigation.navigate('home')}
+        className="bg-red-500 h-12 rounded-2xl justify-center items-center">
+          <Text className="text-white text-xl font-semibold">
+            <ActivityIndicator size="large" color="white"/>
+          </Text>
+        </TouchableOpacity>
+          )
+        }
 
         <Pressable onPress={()=>navigation.navigate("Register")} className="w-full">
           <Text className="text-slate-600">Already have an account?

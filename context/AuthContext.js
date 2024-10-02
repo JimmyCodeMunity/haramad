@@ -7,7 +7,7 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [userToken, setUserToken] = useState(null);
   const [userdata, setUserdata] = useState(null);
 
@@ -51,6 +51,7 @@ export const AuthProvider = ({ children }) => {
 
   // Handle login
   const login = async (email, password) => {
+    setLoading(true);
     try {
       const response = await axios.post(`${BASE_URL}/userlogin`, { email, password });
       const user = response.data;
@@ -63,6 +64,7 @@ export const AuthProvider = ({ children }) => {
 
         // Set state values for token and logged-in status
         setUserToken(user.data);
+        setLoading(false)
 
         // Fetch user data and set it in state
         await getUserdata(user.data); // Fetch user data after login
@@ -71,10 +73,12 @@ export const AuthProvider = ({ children }) => {
       } else {
         // Handle case when token is not present in the response
         throw new Error('Login failed, no token returned');
+        setLoading(false)
       }
     } catch (error) {
       console.error('Error during login', error);
       throw new Error('Login failed');
+      setLoading(false);
     }
   };
 

@@ -10,7 +10,7 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import MapView, { PROVIDER_GOOGLE, PROVIDER_DEFAULT, Marker } from "react-native-maps";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import * as Location from "expo-location";
@@ -18,10 +18,12 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import { PaperProvider } from "react-native-paper";
 import { BASE_URL } from "../config";
+import { AuthContext } from "../context/AuthContext";
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyDdUQ1EIQJB46n2RSusQro1qP3Pd4mGZcA";
 // const socket = io.connect("https://charmed-dog-marble.glitch.me/");
-const socket = io.connect("http://192.168.0.100:8000");
+// const socket = io.connect("http://192.168.0.100:8000");
+const socket = io.connect("http://192.168.1.18:8000");
 const wh = Dimensions.get("window").height;
 
 const HomeScreen = ({ navigation }) => {
@@ -29,6 +31,13 @@ const HomeScreen = ({ navigation }) => {
   const [locationName, setLocationName] = useState("");
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [drivers, setDrivers] = useState([]);
+  // const [userdata,setMyUserdata] = useState([]);
+  const {userdata} = useContext(AuthContext);
+
+  if(userdata){
+    // console.log("profile info",userdata)
+  }
+
 
   // Request user location permission
   const checkPermission = async () => {
