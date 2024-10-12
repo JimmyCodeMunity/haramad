@@ -17,13 +17,15 @@ import * as Location from "expo-location";
 import axios from "axios";
 import { io } from "socket.io-client";
 import { PaperProvider } from "react-native-paper";
-import { BASE_URL } from "../config";
+import { BASE_URL ,SOCKET_URL} from "../config";
 import { AuthContext } from "../context/AuthContext";
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyDdUQ1EIQJB46n2RSusQro1qP3Pd4mGZcA";
 // const socket = io.connect("https://charmed-dog-marble.glitch.me/");
 // const socket = io.connect("http://192.168.0.100:8000");
-const socket = io.connect("http://192.168.1.18:8000");
+// const socket = io.connect("http://192.168.1.18:8000");
+const socket = io.connect(SOCKET_URL);
+// const socket = io.connect("https://api.haramad.co.ke");
 const wh = Dimensions.get("window").height;
 
 const HomeScreen = ({ navigation }) => {
@@ -113,6 +115,7 @@ const HomeScreen = ({ navigation }) => {
       socket.on("driver-location-changed", (driver) => {
         const { _id, location } = driver;
         if (location && location.coordinates) {
+          getDrivers();
           // console.warn("a driver just moved")
           setDrivers((prevDrivers) => {
             const existingDriverIndex = prevDrivers.findIndex(d => d.id === _id);

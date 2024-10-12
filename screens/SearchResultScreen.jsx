@@ -26,13 +26,15 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyDdUQ1EIQJB46n2RSusQro1qP3Pd4mGZcA";
 import { io } from "socket.io-client";
-import { BASE_URL } from "../config";
+import { BASE_URL, SOCKET_URL } from "../config";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import { Alert } from "react-native";
 
 // const socket = io.connect("http://192.168.0.100:8000");
-const socket = io.connect("http://192.168.1.18:8000");
+// const socket = io.connect("http://192.168.1.18:8000");
+// const socket = io.connect("https://api.haramad.co.ke");
+const socket = io.connect(SOCKET_URL);
 
 const SearchResultScreen = ({ navigation, route }) => {
   const { origin, destination } = route.params;

@@ -5,11 +5,14 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import React, { useState, useEffect } from "react";
-import { BASE_URL } from "../config";
+import { BASE_URL, SOCKET_URL } from "../config";
+import { io } from "socket.io-client";
 import axios from "axios";
 import { Image } from "react-native";
+const socket = io.connect(SOCKET_URL);
 
 const RideDecideScreen = ({ navigation, route }) => {
   const { trip } = route.params;
@@ -45,6 +48,18 @@ const RideDecideScreen = ({ navigation, route }) => {
   useEffect(() => {
     getDriverInfo();
   }, [trip]);
+
+ 
+    
+    socket.on("started", (trip) => {
+      console.log(trip);
+      navigation.navigate("ridedecision",{trip:trip})
+
+      // Alert.alert("Trip Accepted", `Driver is on the way: ${trip._id}`);
+    });
+  
+
+  // lus
   return (
     <View className="flex-1 justify-center items-center">
       <View className="justify-center items-center w-full">
@@ -84,10 +99,9 @@ const RideDecideScreen = ({ navigation, route }) => {
                   <Text>{registration}</Text>
                 </View>
               </View>
-              
 
               <View className="w-full justify-center items-center">
-                <ActivityIndicator size="large" color="red"/>
+                <ActivityIndicator size="large" color="red" />
                 <Text>Driver driving to destination...</Text>
               </View>
             </View>
