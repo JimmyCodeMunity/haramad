@@ -19,12 +19,13 @@ import { io } from "socket.io-client";
 import { PaperProvider } from "react-native-paper";
 import { BASE_URL ,SOCKET_URL} from "../config";
 import { AuthContext } from "../context/AuthContext";
+import { useSocketContext } from "../context/SocketContext";
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyDdUQ1EIQJB46n2RSusQro1qP3Pd4mGZcA";
 // const socket = io.connect("https://charmed-dog-marble.glitch.me/");
 // const socket = io.connect("http://192.168.0.100:8000");
 // const socket = io.connect("http://192.168.1.18:8000");
-const socket = io.connect(SOCKET_URL);
+
 // const socket = io.connect("https://api.haramad.co.ke");
 const wh = Dimensions.get("window").height;
 
@@ -35,6 +36,7 @@ const HomeScreen = ({ navigation }) => {
   const [drivers, setDrivers] = useState([]);
   // const [userdata,setMyUserdata] = useState([]);
   const {userdata} = useContext(AuthContext);
+  const {socket} = useSocketContext();
 
   if(userdata){
     // console.log("profile info",userdata)
@@ -112,7 +114,7 @@ const HomeScreen = ({ navigation }) => {
   // get new location changes
   useEffect(() => {
     const initializeSocket = () => {
-      socket.on("driver-location-changed", (driver) => {
+      socket?.on("driver-location-changed", (driver) => {
         const { _id, location } = driver;
         if (location && location.coordinates) {
           getDrivers();
@@ -200,26 +202,7 @@ const HomeScreen = ({ navigation }) => {
         )}
 
         {/* Render driver markers */}
-        {
-          drivers.map((driver)=>{
-            return(
-              <Marker
-            key={driver.id} // Use a unique key for each driver
-            coordinate={{
-              latitude: driver.location.coordinates[1],
-              longitude: driver.location.coordinates[0],
-            }}
-            title={driver.name} // Use driver's name as the title
-            description={`Driver ID: ${driver.id}`} // Description can be customized
-          >
-            <Image
-              source={require("../assets/car.png")} // Use a custom image for driver markers
-              style={{ width: 30, height: 30 }} // Customize marker size
-            />
-          </Marker>
-            )
-          })
-        }
+        {/*  */}
 
         <TouchableOpacity
           onPress={() => navigation.openDrawer()}

@@ -7,42 +7,48 @@ import DrawerMenu from "./DrawerMenu";
 import SettingsScreen from "../screens/SettingsScreen";
 import { AuthProvider } from "../context/AuthContext";
 import { Settings } from "react-native-feather";
+import { SocketContextProvider } from "../context/SocketContext";
+import { AlertNotificationRoot } from "react-native-alert-notification";
 
 const Drawer = createDrawerNavigator();
 
 const MainNavigator = () => {
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <Drawer.Navigator drawerContent={(props) => <DrawerMenu {...props} />}>
-          <Drawer.Screen
-            name="Home"
-            component={StackNavigation}
-            options={{ headerShown: false }}
-          />
+    <AlertNotificationRoot>
+      <AuthProvider>
+        <SocketContextProvider>
+          <NavigationContainer>
+            <Drawer.Navigator
+              drawerContent={(props) => <DrawerMenu {...props} />}
+            >
+              <Drawer.Screen
+                name="Home"
+                component={StackNavigation}
+                options={{ headerShown: false }}
+              />
 
-          <Drawer.Screen name="Payments">
-            {() => <DummyScreen name={"Your Trips"} />}
-          </Drawer.Screen>
+              <Drawer.Screen name="Payments">
+                {() => <DummyScreen name={"Your Trips"} />}
+              </Drawer.Screen>
 
-          <Drawer.Screen name="Help">
-            {() => <DummyScreen name={"Help"} />}
-          </Drawer.Screen>
+              <Drawer.Screen name="Help">
+                {() => <DummyScreen name={"Help"} />}
+              </Drawer.Screen>
 
-          
+              <Drawer.Screen
+                name="Settings"
+                component={SettingsScreen}
+                options={{ headerShown: false }}
+              />
 
-          <Drawer.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{ headerShown: false }}
-          />
-          
-          <Drawer.Screen name="About">
-            {() => <DummyScreen name={"Wallet"} />}
-          </Drawer.Screen>
-        </Drawer.Navigator>
-      </NavigationContainer>
-    </AuthProvider>
+              <Drawer.Screen name="About">
+                {() => <DummyScreen name={"Wallet"} />}
+              </Drawer.Screen>
+            </Drawer.Navigator>
+          </NavigationContainer>
+        </SocketContextProvider>
+      </AuthProvider>
+    </AlertNotificationRoot>
   );
 };
 

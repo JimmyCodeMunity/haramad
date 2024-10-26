@@ -19,7 +19,7 @@ const LoginScreen = ({navigation}) => {
         return;
       }
       await login(email, password);
-      Alert.alert("Login successful");
+      // Alert.alert("Login successful");
       navigation.navigate('Home');
       setDataload(false);
     } catch (error) {

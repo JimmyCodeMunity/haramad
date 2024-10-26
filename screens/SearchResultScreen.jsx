@@ -30,11 +30,13 @@ import { BASE_URL, SOCKET_URL } from "../config";
 import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import { Alert } from "react-native";
+import { useSocketContext } from "../context/SocketContext";
+import { ALERT_TYPE, Dialog, Toast } from "react-native-alert-notification";
 
 // const socket = io.connect("http://192.168.0.100:8000");
 // const socket = io.connect("http://192.168.1.18:8000");
 // const socket = io.connect("https://api.haramad.co.ke");
-const socket = io.connect(SOCKET_URL);
+// const socket = io.connect(SOCKET_URL);
 
 const SearchResultScreen = ({ navigation, route }) => {
   const { origin, destination } = route.params;
@@ -42,6 +44,7 @@ const SearchResultScreen = ({ navigation, route }) => {
   const [finding, setFinding] = useState(true);
   const { userdata } = useContext(AuthContext);
   const [paymethod, setPaymethod] = useState(null);
+  const { socket } = useSocketContext();
 
   const mapRef = useRef(null);
 
@@ -56,8 +59,8 @@ const SearchResultScreen = ({ navigation, route }) => {
   };
 
   // const originname = destination.description;
-  console.log("user coming to",origin?.data?.description)
-  console.log("user going to",destination?.data?.description)
+  // console.log("user coming to",origin?.data?.description)
+  // console.log("user going to",destination?.data?.description)
 
   // Zoom and focus to the selected origin and destination coordinates
   useEffect(() => {
@@ -74,39 +77,69 @@ const SearchResultScreen = ({ navigation, route }) => {
     }
   }, [originloc, destinationloc]);
 
-  console.log("destinationplace",originloc)
-  console.log("originplace",destinationloc)
+  // console.log("destinationplace",originloc)
+  // console.log("originplace",destinationloc)
 
   const [driverLocation, setDriverLocation] = useState(null);
   const [tripDetails, setTripDetails] = useState(null);
   const [found, setFound] = useState([]);
   const [looking, setLooking] = useState(false);
+  const userId = userdata?.userdata?._id;
 
   const findDriver = async () => {
-    setLooking(true);
+    setLooking(true); // Start looking for a driver and show loader
     socket.emit("find-driver", {
-      userId: userdata?.userdata?._id,
+      userId: userId,
       startLocation: originloc,
       destinationLocation: destinationloc,
-      from:origin?.data?.description,
-      to:destination?.data?.description
+      from: origin?.data?.description,
+      to: destination?.data?.description,
     });
 
-    socket.on("trip-accepted", (trip) => {
+    Toast.show({
+      type: ALERT_TYPE.SUCCESS,
+      title: 'Looking for drivers',
+      textBody: 'Please wait while we find you the best driver....',
+    })
+
+    // console.log("driver from trip",trip?.driverId)
+
+    socket?.on("trip-accepted", (trip) => {
       console.log("trip created", trip);
-      setFound([trip]);
-      setFinding(false);
-      setTripDetails(trip);
-      socket.on("driver-location-changed", (location) => {
-        setDriverLocation(location);
+      setFound([trip]); // Set the found trip details
+      setFinding(false); // Stop finding status
+      setLooking(false); // Stop looking loader
+      setTripDetails(trip); // Store the trip details
+      Toast.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Driver found',
+        textBody: 'Awaiting driver to accept request.',
+      })
+      Dialog.show({
+        type: ALERT_TYPE.SUCCESS,
+        title: 'Driver found',
+        textBody: 'Awaiting drivers to accept request.',
+      })
+
+
+      socket?.on("driver-declined-trip",async(trip)=>{
+        Toast.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Driver rejected',
+          textBody: 'Driver rejected your request. Please try again later.',
+        })
+        Dialog.show({
+          type: ALERT_TYPE.DANGER,
+          title: 'Driver rejected',
+          textBody: 'Driver rejected your request. Please try again later.',
+          button:'Try again'
+        })
+        setFound([]);
+      })
+
+      socket?.on("driver-location-changed", (location) => {
+        setDriverLocation(location); // Update driver location if changed
       });
-    });
-
-    socket.on("trip-acceptedbydriver", (trip) => {
-      console.log(trip);
-      navigation.navigate("ridedecision",{trip:trip})
-
-      // Alert.alert("Trip Accepted", `Driver is on the way: ${trip._id}`);
     });
 
     return () => {
@@ -114,6 +147,10 @@ const SearchResultScreen = ({ navigation, route }) => {
       socket.off("driver-location-changed");
     };
   };
+
+
+  
+
 
   const findDrivers = async () => {
     try {
@@ -191,28 +228,64 @@ const SearchResultScreen = ({ navigation, route }) => {
     getDrivers();
   }, []);
 
+  const [driving, setDriving] = useState(false);
+
   useEffect(() => {
+    // Initialize socket events
     const initializeSocket = () => {
-      socket.on("driver-location-changed", (driver) => {
-        const { _id, location } = driver;
-        if (location && location.coordinates) {
-          setDrivers((prevDrivers) => {
-            const existingDriverIndex = prevDrivers.findIndex(
-              (d) => d.id === _id
-            );
-            if (existingDriverIndex !== -1) {
-              const updatedDrivers = [...prevDrivers];
-              updatedDrivers[existingDriverIndex].location.coordinates =
-                location.coordinates;
-              return updatedDrivers;
-            } else {
-              return [...prevDrivers, { id: _id, location }];
-            }
+      socket?.on("connect", () => {
+        console.log("Connected to socket server with socket ID:", socket.id);
+      });
+  
+      // Handle trip-has-started event
+      socket?.on("trip-has-started", (trip) => {
+        console.log("Trip started:", trip);
+        Toast.show({
+          type: ALERT_TYPE.WARNING,
+          title: 'Trip has Started',
+          textBody: 'Haramad wishes you a Safe Journey',
+        });
+  
+        try {
+          // Ensure the trip data is valid before navigating
+          if (trip && trip._id) {
+            setTripDetails(trip); // Store the trip details
+            navigation.navigate("ridedecision", { trip: trip }); // Navigate to the ridedecision screen
+          } else {
+            console.error("Invalid trip data:", trip);
+            Dialog.show({
+              type: ALERT_TYPE.DANGER,
+              title: 'Error',
+              textBody: 'Failed to start the trip. Invalid trip data.',
+              button: 'Close',
+            });
+          }
+        } catch (error) {
+          console.error("Error navigating to ridedecision:", error);
+          Dialog.show({
+            type: ALERT_TYPE.DANGER,
+            title: 'Error',
+            textBody: 'An error occurred while starting the trip. Please try again.',
+            button: 'Close',
           });
         }
       });
-    };
+  
+      socket?.on("driver-is-waiting", (trip) => {
+        Dialog.show({
+          type: ALERT_TYPE.WARNING,
+          title: 'Driver has Arrived',
+          textBody: 'Your driver is here to pick you up',
+          button: 'close',
+        });
+      });
 
+
+      socket?.on("driving-to-destination",()=>{
+        setDriving(true);
+      })
+    };
+  
     const initialize = async () => {
       const permissionGranted = await checkPermission();
       if (permissionGranted) {
@@ -221,13 +294,29 @@ const SearchResultScreen = ({ navigation, route }) => {
         initializeSocket();
       }
     };
-
+  
     initialize();
-
+  
     return () => {
-      socket.off("driver-location-changed");
+      socket.off("trip-has-started");
+      socket.off("driver-is-waiting");
+      // socket.off("connect");
+      socket.off("driving-to-destination");
     };
   }, []);
+  
+
+
+  const CancelRide = ()=>{
+    socket.emit("user-cancel-ride", { tripId: tripDetails?._id });
+    // navigation.navigate("Home");
+    Toast.show({
+      type: ALERT_TYPE.WARNING,
+      title: 'Ride Cancelled',
+      textBody: 'You cancelled the ride.',
+    })
+    setDriving(false);
+  }
 
   return (
     <View className="flex-1 bg-white">
@@ -314,88 +403,56 @@ const SearchResultScreen = ({ navigation, route }) => {
 
       {/* click to confirm ride request */}
 
-      {!looking && (
-        <View className="w-full py-5 justify-center items-center">
-          <View className="w-full my-3 px-4 justify-center items-center space-y-3">
-            <Pressable
-              onPress={()=>setPaymethod("cash")}
-              className={`w-full ${paymethod==="cash" ? 'border border-green-500 border-1':''} p-2 rounded-xl flex-row justify-between items-center`}
-            >
-              <Icon name="cash" size={40}/>
-              <Text className="text-xl font-semibold text-slate-500">
-                Cash
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={()=>setPaymethod("mpesa")}
-              className={`w-full ${paymethod==="mpesa" ? 'border border-green-500 border-1':''} p-2 rounded-xl flex-row justify-between items-center`}
-            >
-              <Image source={require('../assets/mpesa.png')} className="h-10 w-24 rounded-full"/>
-              <Text className="text-xl font-semibold text-slate-500">
-                M-Pesa
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={()=>setPaymethod("visa")}
-              className={`w-full ${paymethod==="visa" ? 'border rounded-2xl p-2 border-blue-500 border-1':''} flex-row justify-between items-center`}
-            >
-             <Image source={require('../assets/visa.png')} className="h-10 w-14 rounded-full"/>
-              <Text className="text-xl font-semibold text-slate-500">
-                Card
-              </Text>
-            </Pressable>
+      <View className="w-full py-5 justify-center items-center px-4">
+        <View className="w-full py-5 space-y-5">
+          <View className="flex-row space-x-4 bg-slate-200 p-2 rounded-md h-12 items-center">
+            <View className="h-6 w-6 rounded-full bg-black"></View>
+            <View className="">
+              <Text>{origin.data.description.slice(0, 30) + "..."}</Text>
+            </View>
           </View>
-          {paymethod === null ? (
-            <TouchableOpacity className="bg-red-200 h-12 w-80 rounded-xl justify-center items-center">
-              <Text className="text-white text-xl font-semibold">
-                Confirm Ride
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={findDriver}
-              className="bg-red-400 h-12 w-80 rounded-xl justify-center items-center"
-            >
-              <Text className="text-white text-xl font-semibold">
-                Confirm Ride
-              </Text>
-            </TouchableOpacity>
-          )}
+          <View className="flex-row space-x-4">
+            <View className="h-6 w-6 bg-black"></View>
+            <View>
+              <Text>{destination.data.description.slice(0, 30) + "..."}</Text>
+            </View>
+          </View>
         </View>
-      )}
 
-      {looking && (
-        <View className="w-full py-5 justify-center items-center">
-          {found.length > 0 && (
-            <ScrollView>
-              {found.map((trip, index) => (
-                <View
-                  key={index}
-                  className="w-full py-5 items-center justify-center px-5"
-                >
-                  <View className="rounded-full border border-slate-500 h-16 w-16 border-slate-400"></View>
-                  <Text className="text-black text-xl font-semibold text-center">
-                    Driver Found
-                  </Text>
-                  <Text className="text-black text-xl font-semibold text-center">
-                    Jimmy
-                  </Text>
-                  <Text className="text-slate-500">
-                    Awaiting driver to accept....
-                  </Text>
-                  <ActivityIndicator size="large" />
-
-                  <TouchableOpacity
-                  onPress={()=>setLooking(false)}
-                   className="text-white h-12 rounded-lg w-60 bg-red-500 justify-center items-center">
-                    <Text className="text-white">Cancel Ride</Text>
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-      )}
+        {driving ? (
+          <View className="w-full justify-center items-center text-center">
+            <Text className="text-black font-semibold tracking-wide text-xl">
+              Driver is on the way..
+            </Text>
+            <View className="flex-row items-center space-x-4 justify-center">
+              <TouchableOpacity
+                onPress={CancelRide}
+                className="bg-black h-12 w-60 rounded-xl justify-center items-center"
+              >
+                <Text className="text-white text-xl font-semibold">
+                  Cancel Ride
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={()=>navigation.navigate("Chat",{trip:tripDetails})}
+                className="bg-green-400 h-12 w-12 rounded-full justify-center items-center"
+              >
+                <Icon name="chat" colo="white" size={30} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity
+            // onPress={CancelRide}
+            onPress={findDriver}
+            className="bg-red-400 h-12 w-80 rounded-xl justify-center items-center"
+          >
+            <Text className="text-white text-xl font-semibold">
+              Confirm Ride
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 };

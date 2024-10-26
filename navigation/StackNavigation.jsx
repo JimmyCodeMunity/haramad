@@ -15,6 +15,8 @@ import { AuthContext } from "../context/AuthContext";
 import RideDecideScreen from "../screens/RideDecideScreen";
 import AcceptedScreen from "../screens/AcceptedScreen";
 import StartTrip from "../screens/StartTrip";
+import ChatScreen from "../screens/ChatScreen";
+import PaymentScreen from "../screens/PaymentScreen";
 // import SearchingRide from "../screens/SearchingRide";
 
 const Stack = createStackNavigator();
@@ -49,6 +51,11 @@ const StackNavigation = () => {
             component={HomeScreen}
             options={{ headerShown: false }}
           />
+          <Stack.Screen
+            name="Chat"
+            component={ChatScreen}
+            options={{ headerShown: false,presentation:'modal' }}
+          />
 
           <Stack.Screen
             name="destinationsearch"
@@ -68,6 +75,11 @@ const StackNavigation = () => {
           <Stack.Screen
             name="ridedecision"
             component={RideDecideScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="payment"
+            component={PaymentScreen}
             options={{ headerShown: false }}
           />
           

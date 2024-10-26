@@ -6,36 +6,44 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Dimensions,
+  Platform,
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BASE_URL, SOCKET_URL } from "../config";
 import { io } from "socket.io-client";
 import axios from "axios";
 import { Image } from "react-native";
-const socket = io.connect(SOCKET_URL);
+import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
+import MapViewDirections from "react-native-maps-directions";
+import { useSocketContext } from "../context/SocketContext";
+
+
+const GOOGLE_MAPS_API_KEY = "AIzaSyDdUQ1EIQJB46n2RSusQro1qP3Pd4mGZcA"; // Make sure you replace it with a valid API Key
+const { height: screenHeight } = Dimensions.get("window");
 
 const RideDecideScreen = ({ navigation, route }) => {
   const { trip } = route.params;
-  const [driverdata, setDriverdata] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [driverdata, setDriverdata] = useState({});
+  const [loading, setLoading] = useState(true);
   const [driverphone, setDriverphone] = useState("");
   const [carmodel, setCarmodel] = useState("");
-  const [name, setName] = useState("");
   const [registration, setRegistration] = useState("");
+  const mapRef = useRef(null);
+  const {socket} = useSocketContext();
+
   const drop = trip.to;
   const pickup = trip.from;
-  // const [registration,setRegistration] = useState("");
 
+  // Fetch driver info from the server
   const getDriverInfo = async () => {
     setLoading(true);
     try {
-      // console.log(BASE_URL);
       const response = await axios.get(
         `${BASE_URL}/driverinfo/${trip.driverId}`
       );
       const dataloaded = response.data;
       setDriverdata(dataloaded);
-      console.log("driver collcted", dataloaded.driver.phone);
       setDriverphone(dataloaded.driver.phone);
       setCarmodel(dataloaded.driver.carmodel);
       setRegistration(dataloaded.driver.registration);
@@ -45,68 +53,160 @@ const RideDecideScreen = ({ navigation, route }) => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     getDriverInfo();
   }, [trip]);
 
- 
-    
-    socket.on("started", (trip) => {
+  // Set the origin and destination for MapView
+  const originloc = driverdata?.driver?.location?.coordinates
+    ? {
+        latitude: driverdata?.driver?.location?.coordinates[1],
+        longitude: driverdata?.driver?.location?.coordinates[0],
+      }
+    : null;
+
+  const destinationloc = trip?.destinationLocation?.coordinates
+    ? {
+        latitude: trip.destinationLocation.coordinates[0],
+        longitude: trip.destinationLocation.coordinates[1],
+      }
+    : null;
+
+  // Automatically zoom and focus on the origin and destination when the data is ready
+  useEffect(() => {
+    if (mapRef.current && originloc && destinationloc) {
+      mapRef.current.fitToCoordinates([originloc, destinationloc], {
+        edgePadding: {
+          top: 50,
+          right: 50,
+          bottom: 50,
+          left: 50,
+        },
+        animated: true,
+      });
+    }
+  }, [originloc, destinationloc]);
+
+  useEffect(() => {
+    socket?.on("trip-has-started", (trip) => {
       console.log(trip);
-      navigation.navigate("ridedecision",{trip:trip})
-
-      // Alert.alert("Trip Accepted", `Driver is on the way: ${trip._id}`);
+      navigation.navigate("ridedecision", { trip: trip });
     });
-  
 
-  // lus
+
+    socket?.on("please-pay",(trip)=>{
+      console.log("paying for trip",trip)
+      // Alert("please pay")
+      navigation.navigate("payment",{trip})
+    })
+
+    return () => {
+      socket.off("trip-has-started");
+      socket.off("please-pay");
+    };
+  }, []);
+
   return (
-    <View className="flex-1 justify-center items-center">
-      <View className="justify-center items-center w-full">
-        <Image className="h-32 w-32" source={require("../assets/logo.png")} />
-      </View>
-      <View className="w-full px-4">
-        {loading ? (
-          <>
-            <View className="justify-center items-center w-full">
-              <Text>Please wait while we get user info...</Text>
-              <ActivityIndicator size="large" color="red" />
-            </View>
-          </>
-        ) : (
-          <>
-            <View className="text-center justify-center items-center">
-              {/* <Text>{trip.driverId}</Text> */}
-              <View className="w-full px-5 bg-white rounded-md py-3 px-4">
-                <View className="flex-row justify-between items-center border border-t-0 border-l-0 border-r-0 border-slate-400 py-3">
-                  <Text>Phone</Text>
-                  <Text>{driverphone}</Text>
-                </View>
-                <View className="flex-row justify-between items-center border border-t-0 border-l-0 border-r-0 border-slate-400 py-3">
-                  <Text>Carmodel</Text>
-                  <Text>{carmodel}</Text>
-                </View>
-                <View className="flex-row justify-between items-center border border-t-0 border-l-0 border-r-0 border-slate-400 py-3">
-                  <Text>Pickup</Text>
-                  <Text>{pickup}</Text>
-                </View>
-                <View className="flex-row justify-between items-center border border-t-0 border-l-0 border-r-0 border-slate-400 py-3">
-                  <Text>Drop</Text>
-                  <Text>{drop}</Text>
-                </View>
-                <View className="flex-row justify-between items-center border border-t-0 border-l-0 border-r-0 border-slate-400 border-b-0 py-3">
-                  <Text>Registration</Text>
-                  <Text>{registration}</Text>
-                </View>
-              </View>
-
-              <View className="w-full justify-center items-center">
-                <ActivityIndicator size="large" color="red" />
-                <Text>Driver driving to destination...</Text>
-              </View>
-            </View>
-          </>
+    <View style={styles.container}>
+      {/* Map View */}
+      <MapView
+        ref={mapRef}
+        mapType={Platform.OS === "android" ? "mutedStandard" : "mutedStandard"}
+        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
+        style={styles.map}
+        showsUserLocation={true}
+        initialRegion={{
+          latitude: originloc?.latitude || 0,
+          longitude: originloc?.longitude || 0,
+          latitudeDelta: 0.05,
+          longitudeDelta: 0.05,
+        }}
+      >
+        {/* Driver Location Marker */}
+        {originloc && (
+          <Marker coordinate={originloc} title="Pickup" description="Driver's Current Location">
+            <Image source={require("../assets/loc1.png")} style={styles.markerIcon} />
+          </Marker>
         )}
+
+        {/* Destination Marker */}
+        {destinationloc && (
+          <Marker coordinate={destinationloc} title="Drop-off" description="Destination">
+            <Image source={require("../assets/loc2.png")} style={styles.markerIcon} />
+          </Marker>
+        )}
+
+        {/* Draw the route between driver and destination */}
+        {originloc && destinationloc && (
+          <MapViewDirections
+            origin={originloc}
+            destination={destinationloc}
+            apikey={GOOGLE_MAPS_API_KEY}
+            strokeWidth={5}
+            strokeColor="black"
+          />
+        )}
+      </MapView>
+
+      {/* Bottom Sheet View */}
+      <View style={styles.bottomSheet}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
+          <View>
+            <Text className="font-semibold text-slate-900 text-xl">
+              {driverdata.driver?.name} is driving to destination...
+            </Text>
+            <View className="space-y-2">
+              <View className="flex-row space-x-2 items-center">
+                <View className="rounded-full h-4 w-4 bg-slate-600"></View>
+                <View>
+                  <Text className="text-lg text-slate-600">{pickup}</Text>
+                </View>
+              </View>
+              <View className="flex-row space-x-2 items-center">
+                <View className="h-4 w-4 bg-slate-600"></View>
+                <View>
+                  <Text className="text-lg text-slate-600">{drop}</Text>
+                </View>
+              </View>
+            </View>
+            <View className="h-16 my-2 bg-slate-200 space-x-4 rounded-md px-4 flex-row items-center">
+              <View>
+                <Image
+                  source={require("../assets/car.png")}
+                  style={styles.markerIcon}
+                />
+              </View>
+              <View>
+                <Text className="text-slate-600 text-xl font-semibold">
+                  {carmodel}
+                </Text>
+                <Text className="text-black text-xl font-semibold">
+                  {registration}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* <TouchableOpacity
+          className=""
+          style={styles.messageButton}
+          onPress={() =>
+            Alert.alert("Message Driver", "This feature is not implemented yet")
+          }
+        >
+          <Text style={styles.messageButtonText}>Message {driverdata.driver?.name}</Text>
+        </TouchableOpacity> */}
+
+        {/* <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.cancelButtonText}>Cancel Ride</Text>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
@@ -114,4 +214,54 @@ const RideDecideScreen = ({ navigation, route }) => {
 
 export default RideDecideScreen;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  map: {
+    flex: 1,
+  },
+  markerIcon: {
+    width: 40,
+    height: 40,
+  },
+  bottomSheet: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 10,
+  },
+  messageButton: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  messageButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  cancelButton: {
+    backgroundColor: "#f44336",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+});
