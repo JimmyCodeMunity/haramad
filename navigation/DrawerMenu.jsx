@@ -1,12 +1,11 @@
 import React, { useContext, useEffect, useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import {
   DrawerContentScrollView,
   DrawerItemList,
 } from "@react-navigation/drawer";
 import { AuthContext } from "../context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { Auth } from 'aws-amplify';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const DrawerMenu = (props) => {
@@ -21,16 +20,14 @@ const DrawerMenu = (props) => {
     await logout();
     navigation.replace("Login");
   };
+
   useEffect(() => {
     const loadUserdata = async () => {
       try {
         // Fetch userdata from AsyncStorage
         const storedUserdata = await AsyncStorage.getItem("userdata");
-        // console.log("stored", storedUserdata);
         if (storedUserdata) {
           setUserdata(JSON.parse(storedUserdata));
-          // setDriverid(JSON.parse(storedUserdata.userdata._id));
-          // console.log("driverid",storedUserdata.userdata._id)
         }
       } catch (error) {
         console.error("Failed to load user data from AsyncStorage", error);
@@ -43,46 +40,98 @@ const DrawerMenu = (props) => {
   }, []);
 
   return (
-    <DrawerContentScrollView {...props} className="">
-      <View className="">
+    <DrawerContentScrollView {...props}>
+      <View style={styles.container}>
         {/* User Row */}
-        <View className="flex-row items-center space-x-3 py-5 px-4">
-          <View className="rounded-full h-12 w-12 bg-slate-300 justify-center items-center">
+        <View style={styles.userRow}>
+          <View style={styles.userIconContainer}>
             <Icon name="car" size={30} color="gray" />
           </View>
 
-          <View className="">
+          <View style={styles.userInfo}>
             {userdata && (
-              <Text className="text-black font-semibold text-xl">
-                {userdata.userdata.name}
-              </Text>
+              <Text style={styles.userName}>{userdata.userdata.name}</Text>
             )}
-            {userdata && (
-              <Text className="text-red-400 font-semibold">
-                {userdata.userdata._id}
-              </Text>
-            )}
+            {userdata && <Text className="text-md text-slate-500">User</Text>}
           </View>
         </View>
 
-        {/* Messages Row */}
-        <View className="py-1 bg-slate-200 w-full p-1"></View>
-      </View>
+        {/* Divider */}
+        <View style={styles.divider}></View>
 
-      <DrawerItemList {...props} />
+        {/* Drawer Item List */}
+        <DrawerItemList {...props} />
 
-      {/* Make money */}
-      <View className="w-full px-4">
-        <Pressable
-          className="flex-row items-center space-x-1"
-          onPress={handleLogout}
-        >
-          <Icon name="logout" color="grey" size={15} />
-          <Text className="text-slate-600 font-semibold text-sm">Logout</Text>
-        </Pressable>
+        {/* Make Money Section */}
+        <View style={styles.logoutContainer}>
+          <Pressable style={styles.logoutButton} onPress={handleLogout}>
+            <Icon name="logout" color="grey" size={20} />
+            <Text style={styles.logoutText}>Logout</Text>
+          </Pressable>
+        </View>
       </View>
     </DrawerContentScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    backgroundColor: "#f7f7f7",
+  },
+  userRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  userIconContainer: {
+    height: 50,
+    width: 50,
+    borderRadius: 25,
+    backgroundColor: "#e0e0e0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  userInfo: {
+    marginLeft: 15,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  userId: {
+    fontSize: 14,
+    color: "#ff4d4d",
+    marginTop: 3,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#e0e0e0",
+    marginVertical: 10,
+  },
+  logoutContainer: {
+    marginTop: 30,
+    borderTopWidth: 1,
+    borderTopColor: "#e0e0e0",
+    paddingTop: 20,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  logoutText: {
+    fontSize: 16,
+    color: "#555",
+    marginLeft: 10,
+    fontWeight: "600",
+  },
+});
 
 export default DrawerMenu;

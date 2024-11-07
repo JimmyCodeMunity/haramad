@@ -32,6 +32,7 @@ import { AuthContext } from "../context/AuthContext";
 import { Alert } from "react-native";
 import { useSocketContext } from "../context/SocketContext";
 import { ALERT_TYPE, Dialog, Toast } from "react-native-alert-notification";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // const socket = io.connect("http://192.168.0.100:8000");
 // const socket = io.connect("http://192.168.1.18:8000");
@@ -83,6 +84,7 @@ const SearchResultScreen = ({ navigation, route }) => {
   const [driverLocation, setDriverLocation] = useState(null);
   const [tripDetails, setTripDetails] = useState(null);
   const [found, setFound] = useState([]);
+  const [driverFound, setDriverFound] = useState(false);
   const [looking, setLooking] = useState(false);
   const userId = userdata?.userdata?._id;
 
@@ -98,44 +100,44 @@ const SearchResultScreen = ({ navigation, route }) => {
 
     Toast.show({
       type: ALERT_TYPE.SUCCESS,
-      title: 'Looking for drivers',
-      textBody: 'Please wait while we find you the best driver....',
-    })
+      title: "Looking for drivers",
+      textBody: "Please wait while we find you the best driver....",
+    });
 
     // console.log("driver from trip",trip?.driverId)
 
     socket?.on("trip-accepted", (trip) => {
-      console.log("trip created", trip);
+      // console.log("trip created", trip);
       setFound([trip]); // Set the found trip details
       setFinding(false); // Stop finding status
       setLooking(false); // Stop looking loader
       setTripDetails(trip); // Store the trip details
+      setDriverFound(true);
       Toast.show({
         type: ALERT_TYPE.SUCCESS,
-        title: 'Driver found',
-        textBody: 'Awaiting driver to accept request.',
-      })
+        title: "Driver found",
+        textBody: "Awaiting driver to accept request.",
+      });
       Dialog.show({
         type: ALERT_TYPE.SUCCESS,
-        title: 'Driver found',
-        textBody: 'Awaiting drivers to accept request.',
-      })
+        title: "Driver found",
+        textBody: "Awaiting drivers to accept request.",
+      });
 
-
-      socket?.on("driver-declined-trip",async(trip)=>{
+      socket?.on("driver-declined-trip", async (trip) => {
         Toast.show({
           type: ALERT_TYPE.DANGER,
-          title: 'Driver rejected',
-          textBody: 'Driver rejected your request. Please try again later.',
-        })
+          title: "Driver rejected",
+          textBody: "Driver rejected your request. Please try again later.",
+        });
         Dialog.show({
           type: ALERT_TYPE.DANGER,
-          title: 'Driver rejected',
-          textBody: 'Driver rejected your request. Please try again later.',
-          button:'Try again'
-        })
+          title: "Driver rejected",
+          textBody: "Driver rejected your request. Please try again later.",
+          button: "Try again",
+        });
         setFound([]);
-      })
+      });
 
       socket?.on("driver-location-changed", (location) => {
         setDriverLocation(location); // Update driver location if changed
@@ -147,10 +149,6 @@ const SearchResultScreen = ({ navigation, route }) => {
       socket.off("driver-location-changed");
     };
   };
-
-
-  
-
 
   const findDrivers = async () => {
     try {
@@ -236,16 +234,16 @@ const SearchResultScreen = ({ navigation, route }) => {
       socket?.on("connect", () => {
         console.log("Connected to socket server with socket ID:", socket.id);
       });
-  
+
       // Handle trip-has-started event
       socket?.on("trip-has-started", (trip) => {
         console.log("Trip started:", trip);
         Toast.show({
           type: ALERT_TYPE.WARNING,
-          title: 'Trip has Started',
-          textBody: 'Haramad wishes you a Safe Journey',
+          title: "Trip has Started",
+          textBody: "Haramad wishes you a Safe Journey",
         });
-  
+
         try {
           // Ensure the trip data is valid before navigating
           if (trip && trip._id) {
@@ -255,37 +253,39 @@ const SearchResultScreen = ({ navigation, route }) => {
             console.error("Invalid trip data:", trip);
             Dialog.show({
               type: ALERT_TYPE.DANGER,
-              title: 'Error',
-              textBody: 'Failed to start the trip. Invalid trip data.',
-              button: 'Close',
+              title: "Error",
+              textBody: "Failed to start the trip. Invalid trip data.",
+              button: "Close",
             });
           }
         } catch (error) {
           console.error("Error navigating to ridedecision:", error);
           Dialog.show({
             type: ALERT_TYPE.DANGER,
-            title: 'Error',
-            textBody: 'An error occurred while starting the trip. Please try again.',
-            button: 'Close',
+            title: "Error",
+            textBody:
+              "An error occurred while starting the trip. Please try again.",
+            button: "Close",
           });
         }
       });
-  
+
       socket?.on("driver-is-waiting", (trip) => {
         Dialog.show({
           type: ALERT_TYPE.WARNING,
-          title: 'Driver has Arrived',
-          textBody: 'Your driver is here to pick you up',
-          button: 'close',
+          title: "Driver has Arrived",
+          textBody: "Your driver is here to pick you up",
+          button: "close",
         });
       });
 
-
-      socket?.on("driving-to-destination",()=>{
+      socket?.on("driving-to-destination", (trip) => {
+        console.log("trip", trip);
         setDriving(true);
-      })
+        setTripDetails(trip);
+      });
     };
-  
+
     const initialize = async () => {
       const permissionGranted = await checkPermission();
       if (permissionGranted) {
@@ -294,9 +294,9 @@ const SearchResultScreen = ({ navigation, route }) => {
         initializeSocket();
       }
     };
-  
+
     initialize();
-  
+
     return () => {
       socket.off("trip-has-started");
       socket.off("driver-is-waiting");
@@ -304,156 +304,230 @@ const SearchResultScreen = ({ navigation, route }) => {
       socket.off("driving-to-destination");
     };
   }, []);
-  
 
-
-  const CancelRide = ()=>{
+  const CancelRide = () => {
+    setDriverFound(false)
     socket.emit("user-cancel-ride", { tripId: tripDetails?._id });
     // navigation.navigate("Home");
     Toast.show({
       type: ALERT_TYPE.WARNING,
-      title: 'Ride Cancelled',
-      textBody: 'You cancelled the ride.',
-    })
+      title: "Ride Cancelled",
+      textBody: "You cancelled the ride.",
+    });
     setDriving(false);
-  }
+  };
 
   return (
-    <View className="flex-1 bg-white">
-      <StatusBar style="dark" />
+    <SafeAreaProvider>
+      <View className="flex-1 bg-white">
+        <StatusBar style="dark" />
 
-      <View className="absolute z-[20] mt-12 w-full px-8 top-10 justify-center items-center">
-        <View className="bg-white px-4 flex-row items-center justify-between rounded-3xl w-full h-12">
-          <View>
-            <Icon name="chevron-left" color="black" size={30} />
-          </View>
-          <View>
-            <Pressable
-              onPress={() => navigation.goBack()}
-              className="bg-slate-300 h-8 rounded-xl w-60 justify-center items-center"
-            >
-              <Text>{destination.data.description.slice(0, 30) + "..."}</Text>
-            </Pressable>
-          </View>
-          <View></View>
-        </View>
-      </View>
-
-      <View
-        className="w-full relative"
-        style={{ height: looking ? wh - 300 : wh - 300 }}
-      >
-        <MapView
-          ref={mapRef}
-          provider={
-            Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT
-          }
-          className="h-full w-full"
-          showsUserLocation={true}
-          mapType="mutedStandard"
+        <View
+          className="w-full relative"
+          style={{ height: driving ? wh - 450 : wh - 300 }}
         >
-          {drivers.map((driver) => {
-            return (
-              <Marker
-                key={driver._id}
-                coordinate={{
-                  latitude: driver.location.coordinates[1],
-                  longitude: driver.location.coordinates[0],
-                }}
-                title={driver.name}
-                description={`Driver ID: ${driver._id}`}
-              >
+          <MapView
+            ref={mapRef}
+            provider={
+              Platform.OS === "android" ? PROVIDER_GOOGLE : PROVIDER_DEFAULT
+            }
+            className="h-full w-full"
+            showsUserLocation={true}
+            mapType="mutedStandard"
+          >
+            {drivers.map((driver) => {
+              return (
+                <Marker
+                  key={driver._id}
+                  coordinate={{
+                    latitude: driver.location.coordinates[1],
+                    longitude: driver.location.coordinates[0],
+                  }}
+                  title={driver.name}
+                  description={`Driver ID: ${driver._id}`}
+                >
+                  <Image
+                    source={require("../assets/car.png")}
+                    style={{ width: 30, height: 30 }}
+                  />
+                </Marker>
+              );
+            })}
+
+            <MapViewDirections
+              origin={originloc}
+              destination={destinationloc}
+              apikey={GOOGLE_MAPS_API_KEY}
+              strokeWidth={5}
+              strokeColor="black"
+            />
+            {originloc?.latitude != null && (
+              <Marker coordinate={originloc} anchor={{ x: 0.5, y: 0.5 }}>
                 <Image
-                  source={require("../assets/car.png")}
-                  style={{ width: 30, height: 30 }}
+                  source={require("../assets/loc1.png")}
+                  className="object-contain h-12 w-12"
+                  style={styles.markerDestination}
+                  resizeMode="cover"
                 />
               </Marker>
-            );
-          })}
-
-          <MapViewDirections
-            origin={originloc}
-            destination={destinationloc}
-            apikey={GOOGLE_MAPS_API_KEY}
-            strokeWidth={5}
-            strokeColor="black"
-          />
-          {originloc?.latitude != null && (
-            <Marker coordinate={originloc} anchor={{ x: 0.5, y: 0.5 }}>
-              <Image
-                source={require("../assets/loc1.png")}
-                className="object-contain h-12 w-12"
-                style={styles.markerDestination}
-                resizeMode="cover"
-              />
-            </Marker>
-          )}
-          {destinationloc?.latitude != null && (
-            <Marker coordinate={destinationloc} anchor={{ x: 0.5, y: 0.5 }}>
-              <Image
-                source={require("../assets/loc2.png")}
-                className="object-contain h-12 w-12"
-                style={styles.markerOrigin2}
-                resizeMode="cover"
-              />
-            </Marker>
-          )}
-        </MapView>
-      </View>
-
-      {/* click to confirm ride request */}
-
-      <View className="w-full py-5 justify-center items-center px-4">
-        <View className="w-full py-5 space-y-5">
-          <View className="flex-row space-x-4 bg-slate-200 p-2 rounded-md h-12 items-center">
-            <View className="h-6 w-6 rounded-full bg-black"></View>
-            <View className="">
-              <Text>{origin.data.description.slice(0, 30) + "..."}</Text>
-            </View>
-          </View>
-          <View className="flex-row space-x-4">
-            <View className="h-6 w-6 bg-black"></View>
-            <View>
-              <Text>{destination.data.description.slice(0, 30) + "..."}</Text>
-            </View>
-          </View>
+            )}
+            {destinationloc?.latitude != null && (
+              <Marker coordinate={destinationloc} anchor={{ x: 0.5, y: 0.5 }}>
+                <Image
+                  source={require("../assets/loc2.png")}
+                  className="object-contain h-12 w-12"
+                  style={styles.markerOrigin2}
+                  resizeMode="cover"
+                />
+              </Marker>
+            )}
+          </MapView>
         </View>
 
-        {driving ? (
-          <View className="w-full justify-center items-center text-center">
-            <Text className="text-black font-semibold tracking-wide text-xl">
-              Driver is on the way..
-            </Text>
-            <View className="flex-row items-center space-x-4 justify-center">
-              <TouchableOpacity
-                onPress={CancelRide}
-                className="bg-black h-12 w-60 rounded-xl justify-center items-center"
-              >
-                <Text className="text-white text-xl font-semibold">
-                  Cancel Ride
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={()=>navigation.navigate("Chat",{trip:tripDetails})}
-                className="bg-green-400 h-12 w-12 rounded-full justify-center items-center"
-              >
-                <Icon name="chat" colo="white" size={30} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity
-            // onPress={CancelRide}
-            onPress={findDriver}
-            className="bg-red-400 h-12 w-80 rounded-xl justify-center items-center"
+        {/* click to confirm ride request */}
+        <View className="absolute top-10 flex-row w-full justify-between px-4 items-center">
+          <Pressable
+            onPress={() => navigation.goBack()}
+            className="bg-black h-12 w-12 rounded-full justify-center items-center"
           >
-            <Text className="text-white text-xl font-semibold">
-              Confirm Ride
-            </Text>
-          </TouchableOpacity>
-        )}
+            <Icon name="arrow-left" size={30} color="white" />
+          </Pressable>
+          {driverFound && (
+            <Pressable className="bg-black h-12 w-32 rounded-full justify-center items-center">
+              <Text className="text-white text-xl">${tripDetails?.price}</Text>
+            </Pressable>
+          )}
+          <Pressable></Pressable>
+        </View>
+        <View className="w-full justify-center items-center rounded-t-xl">
+          <ScrollView className="h-full">
+            {!driving && (
+              <View className="bg-white flex-row space-x-4 w-full p-1 justify-center items-center rounded-t-xl">
+                <Icon name="arrow-left" color="gray" size={25} />
+                <Text className="text-sm text-slate-500">
+                  {destination.data.description.slice(0, 30) + "..."}
+                </Text>
+              </View>
+            )}
+            {driving && (
+              <View className="w-full rounded-t-xl bg-black p-3">
+                <Text className="text-white">
+                  {tripDetails?.driverId?.name} is on the way..
+                </Text>
+              </View>
+            )}
+            {driving && (
+              <View className="w-full px-4">
+                <Text className="text-xl font-bold ">
+                  {tripDetails?.driverId?.name}
+                </Text>
+                <Text>{tripDetails?.driverId?.registration}</Text>
+                <Text>{tripDetails?.driverId?.phone}</Text>
+                <Text>{tripDetails?.driverId?.carmodel}</Text>
+              </View>
+            )}
+            <View className="w-full py-5 space-y-5 px-4">
+              <View className="flex-row space-x-4 bg-slate-200 p-2 rounded-full h-12 items-center">
+                <View className="h-6 w-6 rounded-full bg-black"></View>
+                <View className="">
+                  <Text>{origin.data.description.slice(0, 30) + "..."}</Text>
+                </View>
+              </View>
+              <View className="flex-row space-x-4 bg-slate-200 rounded-full items-center h-12 p-2">
+                <View className="h-6 w-6 bg-black"></View>
+                <View>
+                  <Text>
+                    {destination.data.description.slice(0, 30) + "..."}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {driving ? (
+              <View className="w-full justify-center items-center text-center">
+                <View className="flex-row items-center justify-between w-full px-4">
+                  <Text className="text-xl font-bold">
+                    Distance: {tripDetails?.distance || "Loading..."} KM
+                  </Text>
+                  <Text className="font-bold text-lg">
+                    Price: ${tripDetails?.price || "Loading..."}
+                  </Text>
+                </View>
+                <View className="justify-center flex-row w-full space-x-8 items-center">
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate("Chat", { trip: tripDetails })
+                    }
+                    className="bg-green-400 h-12 w-12 rounded-full justify-center items-center"
+                  >
+                    <Icon name="chat" color="white" size={30} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate("Chat", { trip: tripDetails })
+                    }
+                    className="bg-red-500 h-12 w-12 rounded-full justify-center items-center"
+                  >
+                    <Icon name="phone" color="white" size={30} />
+                  </TouchableOpacity>
+                </View>
+                <View className="w-full items-center justify-center px-4 py-3">
+                  <TouchableOpacity
+                    onPress={CancelRide}
+                    className="bg-black h-12 w-full rounded-xl justify-center items-center"
+                  >
+                    <Text className="text-white text-xl font-semibold">
+                      Cancel Ride
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <>
+                {driverFound ? (
+                  <View className="w-full justify-center items-center">
+                    <Text className="text-slate-600 text-xl text-center">
+                      Driver has been found awaiting driver to accept your
+                      request
+                    </Text>
+                    <Pressable
+                      className="h-12 w-96 rounded-xl justify-center items-center bg-red-400"
+                      onPress={CancelRide}
+                    >
+                      <Text className="text-white text-xl">Cancel Ride</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <>
+                    {looking ? (
+                      <TouchableOpacity
+                        // onPress={CancelRide}
+                        onPress={findDriver}
+                        className="bg-red-400 h-12 w-80 rounded-xl justify-center items-center"
+                      >
+                        <Text className="text-white text-xl font-semibold">
+                          Finding Driver...
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        // onPress={CancelRide}
+                        onPress={findDriver}
+                        className="bg-red-400 h-12 w-80 rounded-xl justify-center items-center"
+                      >
+                        <Text className="text-white text-xl font-semibold">
+                          Confirm Ride
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </ScrollView>
+        </View>
       </View>
-    </View>
+    </SafeAreaProvider>
   );
 };
 

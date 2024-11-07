@@ -9,6 +9,7 @@ import { AuthProvider } from "../context/AuthContext";
 import { Settings } from "react-native-feather";
 import { SocketContextProvider } from "../context/SocketContext";
 import { AlertNotificationRoot } from "react-native-alert-notification";
+import RidesScreen from "../screens/RidesScreen";
 
 const Drawer = createDrawerNavigator();
 
@@ -27,9 +28,11 @@ const MainNavigator = () => {
                 options={{ headerShown: false }}
               />
 
-              <Drawer.Screen name="Payments">
-                {() => <DummyScreen name={"Your Trips"} />}
-              </Drawer.Screen>
+              <Drawer.Screen
+                name="Rides"
+                component={RidesScreen}
+                options={{ headerShown: true }}
+              />
 
               <Drawer.Screen name="Help">
                 {() => <DummyScreen name={"Help"} />}

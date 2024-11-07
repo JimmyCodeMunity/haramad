@@ -148,7 +148,7 @@ const HomeScreen = ({ navigation }) => {
 
     // Cleanup socket connection on unmount
     return () => {
-      socket.off("driver-location-changed");
+      socket?.off("driver-location-changed");
     };
   }, []);
 
@@ -236,7 +236,7 @@ const HomeScreen = ({ navigation }) => {
                 <Text className="text-xl">Boda</Text>
               </View>
             </View>
-            <View className="w-full py-8 space-y-8">
+            <View className="w-full py-8 space-y-3">
               <Pressable
                 onPress={() => navigation.navigate("destinationsearch", { locationname: locationName, initialLocation: currentLocation })}
                 className="w-full flex-row items-center space-x-5"
@@ -255,7 +255,7 @@ const HomeScreen = ({ navigation }) => {
                 onPress={() => navigation.navigate("destinationsearch", { initialLocation: currentLocation })}
                 className="w-full flex-row items-center space-x-5"
               >
-                <View className="h-12 w-full flex-row space-x-4 rounded-md bg-slate-200 items-center px-4">
+                <View className="h-12 w-full flex-row space-x-4 rounded-full bg-slate-200 items-center px-4">
                   <Icon name="magnify" size={30} color="gray" />
                   <Text className="text-slate-400 text-xl">To ?</Text>
                 </View>

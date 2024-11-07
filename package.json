@@ -21,6 +21,7 @@
     "amazon-cognito-identity-js": "^6.3.12",
     "aws-amplify": "^6.6.2",
     "axios": "^1.7.7",
+    "date-fns": "^4.1.0",
     "expo": "~51.0.28",
     "expo-location": "^17.0.1",
     "expo-status-bar": "~1.12.1",

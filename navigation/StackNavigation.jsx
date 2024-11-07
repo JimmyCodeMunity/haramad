@@ -17,6 +17,8 @@ import AcceptedScreen from "../screens/AcceptedScreen";
 import StartTrip from "../screens/StartTrip";
 import ChatScreen from "../screens/ChatScreen";
 import PaymentScreen from "../screens/PaymentScreen";
+import RidesScreen from "../screens/RidesScreen";
+import TripDetails from "../screens/TripDetails";
 // import SearchingRide from "../screens/SearchingRide";
 
 const Stack = createStackNavigator();
@@ -67,10 +69,20 @@ const StackNavigation = () => {
             component={SettingsScreen}
             options={{ headerShown: false, presentation: "modal" }}
           />
+          {/* <Stack.Screen
+            name="rides"
+            component={RidesScreen}
+            options={{ headerShown: true }}
+          /> */}
           <Stack.Screen
             name="search"
             component={SearchResultScreen}
             options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="tripdetails"
+            component={TripDetails}
+            options={{ headerShown: true }}
           />
           <Stack.Screen
             name="ridedecision"
@@ -80,7 +92,7 @@ const StackNavigation = () => {
           <Stack.Screen
             name="payment"
             component={PaymentScreen}
-            options={{ headerShown: false }}
+            options={{ headerShown: true }}
           />
           
           {/* <Stack.Screen

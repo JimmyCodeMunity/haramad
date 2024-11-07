@@ -95,10 +95,10 @@ const RideDecideScreen = ({ navigation, route }) => {
     });
 
 
-    socket?.on("please-pay",(trip)=>{
-      console.log("paying for trip",trip)
+    socket?.on("please-pay",(mytrip)=>{
+      // console.log("paying for trip",mytrip)
       // Alert("please pay")
-      navigation.navigate("payment",{trip})
+      navigation.navigate("payment",{trip:mytrip})
     })
 
     return () => {
@@ -148,6 +148,11 @@ const RideDecideScreen = ({ navigation, route }) => {
           />
         )}
       </MapView>
+      <View className="absolute top-10 justify-center items-center w-full">
+        <View className="bg-black h-12 w-40 rounded-full justify-center items-center">
+          <Text className="text-white font-bold text-xl">$ {trip.price}</Text>
+        </View>
+      </View>
 
       {/* Bottom Sheet View */}
       <View style={styles.bottomSheet}>

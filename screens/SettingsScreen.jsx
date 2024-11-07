@@ -39,7 +39,7 @@ const SettingsScreen = ({navigation}) => {
   // }, []);
   return (
     <SafeAreaView className="flex-1">
-      <View className="justify-center items-center space-y-1">
+      <View className="justify-center items-center space-y-1 py-16">
         <View className="rounded-full bg-slate-200 h-16 w-16 justify-center items-center">
         <Icon name="account" color="gray" size={30} />
         </View>
@@ -65,9 +65,9 @@ const SettingsScreen = ({navigation}) => {
             <Icon name="chevron-right" color="grey" size={25} />
           </View>
         </Pressable>
-        <Pressable className="flex-row items-center justify-between py-3">
+        <Pressable className="flex-row items-center border border-r-0 border-l-0 border-t-0 border-slate-300 justify-between py-3">
           <View className="flex-row space-x-2">
-            <Icon name="account" color="gray" size={25} />
+            <Icon name="information" color="gray" size={25} />
             <Text className="text-slate-700 text-lg">About</Text>
           </View>
           <View>
@@ -75,8 +75,19 @@ const SettingsScreen = ({navigation}) => {
           </View>
         </Pressable>
         <Pressable
+        onPress={()=>navigation.navigate("rides")}
+        className="flex-row items-center justify-between py-3 border border-r-0 border-l-0 border-t-0 border-slate-300">
+          <View className="flex-row space-x-2">
+            <Icon name="car" color="gray" size={25} />
+            <Text className="text-slate-700 text-lg">Rides</Text>
+          </View>
+          <View>
+            <Icon name="chevron-right" color="grey" size={25} />
+          </View>
+        </Pressable>
+        <Pressable
         onPress={handleLogout}
-        className="flex-row items-center justify-between py-3">
+        className="flex-row items-center justify-between py-3 ">
           <View className="flex-row space-x-2">
             <Icon name="account" color="gray" size={25} />
             <Text className="text-red-400 text-lg">Logout</Text>

@@ -16,6 +16,8 @@
       "bundleIdentifier": "com.haramad"
     },
     "android": {
+      "versionCode": 1,
+      "buildType": "apk",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff",
@@ -30,21 +32,22 @@
             "FOREGROUND_SERVICE"
           ]
         }
-      }
+      },
+      "package": "com.haramad"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "acb19079-4a0e-4157-82c4-9a8653c09f69"
-      }
-    },
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "extra": {
+      "eas": {
+        "projectId": "3e2a5330-840a-4874-bc3c-5b67fd53bae9"
+      }
+    },
     "updates": {
-      "url": "https://u.expo.dev/acb19079-4a0e-4157-82c4-9a8653c09f69"
+      "url": "https://u.expo.dev/3e2a5330-840a-4874-bc3c-5b67fd53bae9"
     }
   }
 }
